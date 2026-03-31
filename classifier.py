@@ -10,6 +10,8 @@ extend.  A future version could swap in a small intent-classification model
 (e.g. a fine-tuned sentence-transformer) without changing the public API.
 """
 
+from __future__ import annotations
+
 import re
 
 # ---------------------------------------------------------------------------

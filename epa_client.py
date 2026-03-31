@@ -17,6 +17,8 @@ TODO (future): add a local metadata index (SQLite or DuckDB) in front of
 these calls to cache results and enable offline / low-latency lookups.
 """
 
+from __future__ import annotations
+
 import logging
 import urllib.parse
 
