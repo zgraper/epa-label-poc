@@ -50,13 +50,24 @@ def _get(url: str, params: dict | None = None) -> dict | list | None:
     return None
 
 
+_PRODUCT_KEYS = frozenset({"productName", "registrationNumber", "regNo"})
+
+
 def _items_from_response(data: dict | list | None) -> list[dict]:
     """Normalise the varied ORDS response shapes into a flat list of items."""
     if data is None:
         return []
     # ORDS collection endpoint wraps results in {"items": [...]}
     if isinstance(data, dict):
-        return data.get("items", [])
+        if "items" in data:
+            return data.get("items", [])
+        # ORDS single-record endpoint (e.g. /ppls/<reg_no>) returns a bare
+        # product dict with no "items" wrapper.  Only wrap it if it contains
+        # at least one recognised product field, to avoid treating error
+        # responses as product records.
+        if _PRODUCT_KEYS.intersection(data):
+            return [data]
+        return []
     # Some endpoints return a bare list of records.
     if isinstance(data, list):
         return data
@@ -78,6 +89,30 @@ def lookup_by_reg_no(reg_no: str) -> list[dict]:
     """
     url = f"{_BASE_URL}/{urllib.parse.quote(reg_no, safe='')}"
     data = _get(url)
+    return _items_from_response(data)
+
+
+def lookup_by_reg_no_search(reg_no: str, limit: int = _DEFAULT_LIMIT) -> list[dict]:
+    """Search for products by registration number via the collection endpoint.
+
+    This is a fallback for when the direct single-record lookup returns nothing.
+    It uses the ORDS ``q`` filter on the ``registrationNumber`` field.
+
+    Args:
+        reg_no: Registration number string, e.g. ``"71995-68"``.
+        limit:  Maximum number of results to request from the API.
+
+    Returns:
+        List of matching product dicts (may be empty).
+    """
+    import json
+
+    url = _BASE_URL + "/"
+    params = {
+        "q": json.dumps({"registrationNumber": reg_no}),
+        "limit": limit,
+    }
+    data = _get(url, params=params)
     return _items_from_response(data)
 
 

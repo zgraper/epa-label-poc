@@ -24,6 +24,7 @@ from epa_client import (
     lookup_by_product_name_exact,
     lookup_by_product_name_partial,
     lookup_by_reg_no,
+    lookup_by_reg_no_search,
 )
 from utils import (
     epa_pdf_url,
@@ -104,6 +105,10 @@ with st.spinner("Searching EPA PPLS…"):
         # Path A: registration-number lookup
         st.caption(f"🔍 Looking up EPA registration number **{reg_no}**…")
         candidates = lookup_by_reg_no(reg_no)
+        # If the direct reg-number lookup returned nothing, fall back to a
+        # collection-endpoint search filtered by registration number.
+        if not candidates:
+            candidates = lookup_by_reg_no_search(reg_no)
     else:
         # Path B: exact product-name lookup
         candidates = lookup_by_product_name_exact(query)
